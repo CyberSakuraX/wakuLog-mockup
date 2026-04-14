@@ -11,7 +11,7 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(160deg, #2D2A3E 0%, #1a1a2e 100%); min-height: 100vh; }
-button { cursor: pointer; transition: transform 0.1s, opacity 0.15s; }
+button { cursor: pointer; transition: transform 0.1s, opacity 0.15s; font-family: 'Noto Sans JP', sans-serif; }
 button:active { transform: scale(0.97); opacity: 0.85; }
 input:focus { border-color: #E8A87C !important; }
 </style>
@@ -27,6 +27,8 @@ const SCREENS = {
   ONBOARDING_3: "onboarding_3",
   HOME: "home",
   RESULT: "result",
+  LOG: "log",
+  PROFILE: "profile",
 };
 
 const QUICK_SCENES = [
@@ -38,6 +40,19 @@ const QUICK_SCENES = [
   { icon: "😤", label: "順番が待てない", keywords: "順番　待てない" },
 ];
 
+// 初回チェックリスト: 非診断・柔らかい表現（いびきラボのUIを参考）
+// 病名ではなく「困りの傾向」として収集
+const TRAIT_CHECKLIST = [
+  { emoji: "🎯", label: "こだわりが強め", hint: "手順や物の配置などに強いこだわり" },
+  { emoji: "⚡", label: "気持ちの切替えが苦手", hint: "切り替え時に癇癪・涙が多い" },
+  { emoji: "👂", label: "音・光に敏感", hint: "特定の音・場所を嫌がる" },
+  { emoji: "🍽", label: "食べ物の好みがはっきり", hint: "偏食・同じものを好む" },
+  { emoji: "🏃", label: "じっとしているのが苦手", hint: "動き回る・座っていられない" },
+  { emoji: "💬", label: "言葉でのやりとりが難しい", hint: "会話より行動が先に出る" },
+  { emoji: "🤝", label: "お友だちとの関わりが苦手", hint: "一人遊びを好むなど" },
+  { emoji: "😴", label: "眠りにつきにくい", hint: "寝つき・寝起きでぐずる" },
+];
+
 const REFRAME_DATA = {
   "片付け　拒否": {
     original: "片付けなさい！何回言ったらわかるの！",
@@ -47,6 +62,7 @@ const REFRAME_DATA = {
     ],
     care: "何度言っても動かない時間、本当に消耗しますよね。あなたが「片付けてほしい」と思うのは、お子さんの生活を整えたいという愛情そのものです。",
     childName: "ゆうくん",
+    basis: "選択肢提示（ABA的アプローチ）",
   },
   "食事　拒否": {
     original: "ちゃんと食べなさい！",
@@ -56,6 +72,7 @@ const REFRAME_DATA = {
     ],
     care: "せっかく作ったご飯を食べてもらえないのは、心が折れますよね。あなたの努力はちゃんとお子さんに届いています。",
     childName: "ゆうくん",
+    basis: "スモールステップ（SSTの考え方）",
   },
   "着替え　拒否": {
     original: "早く着替えなさい！遅刻するよ！",
@@ -65,6 +82,7 @@ const REFRAME_DATA = {
     ],
     care: "朝の忙しい時間に着替えで止まると焦りますよね。毎朝お子さんを送り出そうと頑張っているあなたは、すごいです。",
     childName: "ゆうくん",
+    basis: "選択肢提示（ABA的アプローチ）",
   },
   "癇癪　パニック": {
     original: "いい加減にして！泣いても変わらないよ！",
@@ -74,6 +92,7 @@ const REFRAME_DATA = {
     ],
     care: "癇癪の最中は、何をしても正解がないように感じますよね。あなたがそばにいること自体が、お子さんの安心の土台になっています。",
     childName: "ゆうくん",
+    basis: "感情のラベリング（SST）",
   },
   "外出　拒否": {
     original: "行かなきゃダメでしょ！わがまま言わないで！",
@@ -83,6 +102,7 @@ const REFRAME_DATA = {
     ],
     care: "出かけなきゃいけないのに動いてくれないのは、本当にもどかしいですよね。あなたの粘り強さ、お子さんはちゃんと感じていますよ。",
     childName: "ゆうくん",
+    basis: "スモールステップ（SST）",
   },
   "順番　待てない": {
     original: "ちゃんと待ちなさい！恥ずかしいでしょ！",
@@ -92,8 +112,24 @@ const REFRAME_DATA = {
     ],
     care: "周りの目が気になる中での対応、本当に大変ですよね。外でも一生懸命お子さんに向き合っているあなたは、立派です。",
     childName: "ゆうくん",
+    basis: "見通しの提示（ABA）",
   },
 };
+
+// 習慣化トラッキング用のサンプル（「200回で習慣化」の考え方）
+const HABITS = [
+  { emoji: "👟", label: "玄関で靴をそろえる", count: 47, goal: 200 },
+  { emoji: "👋", label: "朝「おはよう」と言えた", count: 124, goal: 200 },
+  { emoji: "🍽", label: "ごちそうさまを言えた", count: 88, goal: 200 },
+];
+
+// 行動ログのサンプル（好き/苦手の蓄積）
+const TRAIT_LOGS = [
+  { date: "4/13", type: "like", emoji: "🚂", text: "電車の図鑑に30分集中" },
+  { date: "4/12", type: "dislike", emoji: "🔊", text: "掃除機の音で泣いた" },
+  { date: "4/11", type: "like", emoji: "🎨", text: "青いクレヨンだけを使う" },
+  { date: "4/10", type: "dislike", emoji: "👔", text: "タグ付きの服を嫌がる" },
+];
 
 const Phone = ({ children }) => (
   <div style={{
@@ -119,6 +155,28 @@ const StatusBar = () => (
     <span>9:41</span>
     <div style={{ width: 80, height: 24, background: "#1a1a2e", borderRadius: 12 }} />
     <span>📶 🔋</span>
+  </div>
+);
+
+const BottomNav = ({ active, onChange }) => (
+  <div style={{
+    display: "flex", justifyContent: "space-around", padding: "8px 0 16px",
+    borderTop: "1px solid #F0E8DC", background: "#FFFBF5",
+  }}>
+    {[
+      { icon: "🏠", label: "ホーム", screen: SCREENS.HOME },
+      { icon: "📊", label: "ログ", screen: SCREENS.LOG },
+      { icon: "👤", label: "特性", screen: SCREENS.PROFILE },
+    ].map(t => (
+      <button key={t.label} onClick={() => onChange(t.screen)} style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        gap: 2, opacity: active === t.screen ? 1 : 0.4,
+        background: "none", border: "none", padding: "4px 12px",
+      }}>
+        <span style={{ fontSize: 20 }}>{t.icon}</span>
+        <span style={{ fontSize: 10, color: "#3D3425", fontWeight: active === t.screen ? 700 : 400 }}>{t.label}</span>
+      </button>
+    ))}
   </div>
 );
 
@@ -148,15 +206,9 @@ const OnboardingScreen1 = ({ onNext }) => (
   </div>
 );
 
-const OnboardingChat = ({ step, onNext, onFinish }) => {
+// Step2: ニックネーム入力（チャット形式）
+const OnboardingNickname = ({ onNext }) => {
   const [nickname, setNickname] = useState("");
-  const [worry, setWorry] = useState("");
-  const isStep2 = step === SCREENS.ONBOARDING_2;
-
-  const messages = isStep2
-    ? [{ from: "ai", text: "はじめまして！wakuLogです 🌱\nまずはお子さんのニックネームを教えてください。" }]
-    : [{ from: "ai", text: "ゆうくん、すてきなお名前ですね！\n今いちばん困っていること、ひとつだけ教えてもらえますか？" }];
-
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <StatusBar />
@@ -171,62 +223,131 @@ const OnboardingChat = ({ step, onNext, onFinish }) => {
           {[1, 2, 3].map(i => (
             <div key={i} style={{
               width: 8, height: 8, borderRadius: 4,
-              background: i <= (isStep2 ? 1 : 2) ? "#E8A87C" : "#E8DDD0",
+              background: i <= 1 ? "#E8A87C" : "#E8DDD0",
             }} />
           ))}
         </div>
       </div>
       <div style={{ flex: 1, padding: "20px 16px", overflowY: "auto" }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "flex-start", marginBottom: 12 }}>
-            <div style={{
-              background: "#FFF3E6", color: "#3D3425",
-              padding: "12px 16px", borderRadius: 18, borderTopLeftRadius: 4,
-              maxWidth: "80%", fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-line",
-            }}>
-              {m.text}
-            </div>
+        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 12 }}>
+          <div style={{
+            background: "#FFF3E6", color: "#3D3425",
+            padding: "12px 16px", borderRadius: 18, borderTopLeftRadius: 4,
+            maxWidth: "80%", fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-line",
+          }}>
+            はじめまして！wakuLogです 🌱{"\n"}まずはお子さんのニックネームを教えてください。
           </div>
-        ))}
+        </div>
+        <p style={{ fontSize: 11, color: "#A89880", textAlign: "center", margin: "16px 8px 0", lineHeight: 1.6 }}>
+          ※ 本名や診断名などは入れなくて大丈夫です
+        </p>
       </div>
       <div style={{ padding: "12px 16px 24px", borderTop: "1px solid #F0E8DC" }}>
-        {isStep2 ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            <input value={nickname} onChange={e => setNickname(e.target.value)}
-              placeholder="ニックネーム（例：ゆうくん）"
-              style={{
-                flex: 1, padding: "12px 16px", borderRadius: 24,
-                border: "2px solid #E8DDD0", fontSize: 14, outline: "none", background: "white",
-                fontFamily: "'Noto Sans JP', sans-serif",
-              }}
-            />
-            <button onClick={onNext} style={{
-              width: 44, height: 44, borderRadius: 22,
-              border: "none", background: "#E8A87C", color: "white", fontSize: 18,
-            }}>→</button>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {["片付けをしない", "食事の偏りがひどい", "癇癪がひどい", "こだわりが強い"].map(w => (
-              <button key={w} onClick={onFinish} onMouseEnter={() => setWorry(w)}
-                style={{
-                  padding: "12px 16px", borderRadius: 12,
-                  border: "2px solid #E8DDD0", background: worry === w ? "#FFF3E6" : "white",
-                  fontSize: 14, textAlign: "left", color: "#3D3425",
-                  fontFamily: "'Noto Sans JP', sans-serif",
-                }}>
-                {w}
-              </button>
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={nickname} onChange={e => setNickname(e.target.value)}
+            placeholder="ニックネーム（例：ゆうくん）"
+            style={{
+              flex: 1, padding: "12px 16px", borderRadius: 24,
+              border: "2px solid #E8DDD0", fontSize: 14, outline: "none", background: "white",
+              fontFamily: "'Noto Sans JP', sans-serif",
+            }}
+          />
+          <button onClick={onNext} style={{
+            width: 44, height: 44, borderRadius: 22,
+            border: "none", background: "#E8A87C", color: "white", fontSize: 18,
+          }}>→</button>
+        </div>
       </div>
     </div>
   );
 };
 
-const HomeScreen = ({ onSelect, onKeywordSubmit }) => {
+// Step3: 特性チェックリスト（非診断・複数選択OK、いびきラボ風）
+const OnboardingChecklist = ({ onFinish }) => {
+  const [selected, setSelected] = useState(new Set());
+  const toggle = (label) => {
+    const next = new Set(selected);
+    if (next.has(label)) next.delete(label);
+    else next.add(label);
+    setSelected(next);
+  };
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <StatusBar />
+      <div style={{
+        padding: "12px 20px", borderBottom: "1px solid #F0E8DC",
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <span style={{ fontSize: 20 }}>🌱</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#3D3425" }}>お子さんの傾向</span>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", gap: 4 }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{
+              width: 8, height: 8, borderRadius: 4,
+              background: i <= 3 ? "#E8A87C" : "#E8DDD0",
+            }} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: "16px 20px 8px" }}>
+        <h2 style={{ fontSize: 17, fontWeight: 800, color: "#3D3425", margin: "0 0 6px", lineHeight: 1.4 }}>
+          ゆうくんに当てはまるものを<br />教えてください
+        </h2>
+        <p style={{ fontSize: 12, color: "#8B7D6B", margin: 0, lineHeight: 1.6 }}>
+          複数選んでOK・後からいつでも変更できます<br />
+          <span style={{ color: "#A89880" }}>※ 診断はしません。声かけの参考にするだけです</span>
+        </p>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {TRAIT_CHECKLIST.map(item => {
+            const on = selected.has(item.label);
+            return (
+              <button key={item.label} onClick={() => toggle(item.label)} style={{
+                padding: "12px 14px", borderRadius: 14,
+                border: `2px solid ${on ? "#E8A87C" : "#E8DDD0"}`,
+                background: on ? "#FFF3E6" : "white",
+                display: "flex", alignItems: "center", gap: 12,
+                textAlign: "left",
+              }}>
+                <span style={{ fontSize: 24 }}>{item.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#3D3425" }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: "#8B7D6B", marginTop: 2 }}>{item.hint}</div>
+                </div>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 11,
+                  border: `2px solid ${on ? "#E8A87C" : "#D4C4B0"}`,
+                  background: on ? "#E8A87C" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "white", fontSize: 13, fontWeight: 800,
+                }}>{on ? "✓" : ""}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ padding: "12px 16px 20px", borderTop: "1px solid #F0E8DC" }}>
+        <button onClick={onFinish} style={{
+          width: "100%", padding: "14px", borderRadius: 14,
+          border: "none", background: "linear-gradient(135deg, #E8A87C, #D4845A)",
+          color: "white", fontSize: 15, fontWeight: 700,
+          boxShadow: "0 4px 16px rgba(232,168,124,0.35)",
+        }}>
+          {selected.size > 0 ? `${selected.size}件で進む` : "スキップして進む"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const HomeScreen = ({ onSelect, onKeywordSubmit, onNav }) => {
   const [keyword, setKeyword] = useState("");
+  const [voiceActive, setVoiceActive] = useState(false);
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <StatusBar />
@@ -242,9 +363,11 @@ const HomeScreen = ({ onSelect, onKeywordSubmit }) => {
         }}>🌱</div>
       </div>
 
+      {/* ハイブリッド入力: テキスト（主軸）＋音声（オプション） */}
       <div style={{ padding: "8px 16px" }}>
         <div style={{
-          display: "flex", gap: 8, background: "white", borderRadius: 16,
+          display: "flex", gap: 6, alignItems: "center",
+          background: "white", borderRadius: 16,
           padding: "4px", border: "2px solid #E8DDD0",
         }}>
           <input value={keyword} onChange={e => setKeyword(e.target.value)}
@@ -255,27 +378,38 @@ const HomeScreen = ({ onSelect, onKeywordSubmit }) => {
               fontFamily: "'Noto Sans JP', sans-serif",
             }}
           />
-          <button onClick={() => onKeywordSubmit("片付け　拒否")} style={{
-            padding: "10px 16px", borderRadius: 12, border: "none",
+          <button
+            onClick={() => setVoiceActive(v => !v)}
+            title="音声入力"
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: "none",
+              background: voiceActive ? "#FFE4D0" : "#F5EFEA",
+              fontSize: 16, color: voiceActive ? "#D4845A" : "#8B7D6B",
+            }}>🎙</button>
+          <button onClick={() => onKeywordSubmit(keyword || "片付け　拒否")} style={{
+            padding: "10px 14px", borderRadius: 12, border: "none",
             background: "#E8A87C", color: "white", fontSize: 13, fontWeight: 700,
             whiteSpace: "nowrap",
           }}>変換</button>
         </div>
+        <p style={{ fontSize: 10, color: "#A89880", margin: "6px 8px 0" }}>
+          文字入力・音声どちらでもOK
+        </p>
       </div>
 
-      <div style={{ padding: "16px 16px 8px" }}>
-        <h3 style={{ fontSize: 13, fontWeight: 700, color: "#8B7D6B", margin: "0 0 12px 4px", letterSpacing: 1 }}>
-          ⚡ よくあるシーン
+      <div style={{ padding: "12px 16px 8px" }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: "#8B7D6B", margin: "0 0 10px 4px", letterSpacing: 1 }}>
+          ⚡ よくあるシーン（FAQ）
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {QUICK_SCENES.map(s => (
             <button key={s.label} onClick={() => onSelect(s.keywords)} style={{
-              padding: "16px 8px", borderRadius: 16, border: "2px solid #F0E8DC",
+              padding: "14px 6px", borderRadius: 14, border: "2px solid #F0E8DC",
               background: "white", display: "flex", flexDirection: "column",
-              alignItems: "center", gap: 6,
+              alignItems: "center", gap: 4,
             }}>
-              <span style={{ fontSize: 28 }}>{s.icon}</span>
-              <span style={{ fontSize: 11, color: "#3D3425", fontWeight: 600, lineHeight: 1.3 }}>{s.label}</span>
+              <span style={{ fontSize: 26 }}>{s.icon}</span>
+              <span style={{ fontSize: 10.5, color: "#3D3425", fontWeight: 600, lineHeight: 1.3, textAlign: "center" }}>{s.label}</span>
             </button>
           ))}
         </div>
@@ -284,35 +418,207 @@ const HomeScreen = ({ onSelect, onKeywordSubmit }) => {
       <div style={{ flex: 1 }} />
 
       <div style={{
-        padding: "12px 20px", margin: "0 16px 16px", borderRadius: 16,
+        padding: "12px 16px", margin: "0 16px 12px", borderRadius: 14,
         background: "linear-gradient(135deg, #FFF3E6, #FFEBD4)", border: "1px solid #F0DCC8",
+        display: "flex", alignItems: "center", gap: 10,
       }}>
-        <p style={{ fontSize: 13, color: "#6B5540", margin: 0, lineHeight: 1.7 }}>
-          💡 前回「片付け」で<strong>選択肢を与える</strong>声掛けが効果ありでした
+        <span style={{ fontSize: 22 }}>💡</span>
+        <p style={{ fontSize: 12.5, color: "#6B5540", margin: 0, lineHeight: 1.6, flex: 1 }}>
+          前回「片付け」で<strong>選択肢を与える</strong>声掛けが効果ありでした
         </p>
       </div>
 
-      <div style={{
-        display: "flex", justifyContent: "space-around", padding: "8px 0 16px",
-        borderTop: "1px solid #F0E8DC",
-      }}>
-        {[
-          { icon: "🏠", label: "ホーム", active: true },
-          { icon: "📊", label: "ログ", active: false },
-          { icon: "👤", label: "特性", active: false },
-        ].map(t => (
-          <div key={t.label} style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 2, opacity: t.active ? 1 : 0.4,
-          }}>
-            <span style={{ fontSize: 20 }}>{t.icon}</span>
-            <span style={{ fontSize: 10, color: "#3D3425", fontWeight: t.active ? 700 : 400 }}>{t.label}</span>
-          </div>
-        ))}
-      </div>
+      <BottomNav active={SCREENS.HOME} onChange={onNav} />
     </div>
   );
 };
+
+// ログ画面: 行動特性の記録（好き/苦手） ＋ 習慣化カウンター
+const LogScreen = ({ onNav }) => {
+  const [tab, setTab] = useState("traits"); // "traits" or "habits"
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <StatusBar />
+      <div style={{ padding: "14px 20px 8px" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: "#3D3425", margin: 0 }}>ゆうくんのログ</h2>
+        <p style={{ fontSize: 11, color: "#8B7D6B", margin: "2px 0 0" }}>日々の記録を蓄積・可視化</p>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, padding: "8px 16px" }}>
+        {[
+          { key: "traits", label: "🌟 行動特性" },
+          { key: "habits", label: "🏆 習慣づくり" },
+        ].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{
+            flex: 1, padding: "10px", borderRadius: 10,
+            border: "none", fontSize: 12, fontWeight: 700,
+            background: tab === t.key ? "#E8A87C" : "#F5EFEA",
+            color: tab === t.key ? "white" : "#8B7D6B",
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px 16px" }}>
+        {tab === "traits" && (
+          <>
+            <div style={{
+              background: "linear-gradient(135deg, #FFF3E6, #FFEBD4)",
+              borderRadius: 14, padding: "12px 14px", marginBottom: 12,
+              border: "1px solid #F0DCC8",
+            }}>
+              <p style={{ fontSize: 11, color: "#8B7D6B", margin: 0, fontWeight: 700 }}>今月の傾向</p>
+              <p style={{ fontSize: 13, color: "#3D3425", margin: "4px 0 0", lineHeight: 1.6 }}>
+                <strong>🚂 乗り物</strong>への集中時間が長く、<strong>🔊 大きな音</strong>への苦手反応が3回
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+              <button style={{
+                flex: 1, padding: "10px", borderRadius: 10,
+                border: "2px dashed #E8A87C", background: "white",
+                fontSize: 12, fontWeight: 700, color: "#D4845A",
+              }}>+ 好きを記録</button>
+              <button style={{
+                flex: 1, padding: "10px", borderRadius: 10,
+                border: "2px dashed #B8A89A", background: "white",
+                fontSize: 12, fontWeight: 700, color: "#8B7D6B",
+              }}>+ 苦手を記録</button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {TRAIT_LOGS.map((l, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  background: "white", borderRadius: 12,
+                  border: `1px solid ${l.type === "like" ? "#F0DCC8" : "#E4DCD0"}`,
+                  padding: "10px 12px",
+                }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 18,
+                    background: l.type === "like" ? "#FFF3E6" : "#ECE6DE",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 18,
+                  }}>{l.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, color: "#3D3425", fontWeight: 600 }}>{l.text}</div>
+                    <div style={{ fontSize: 10, color: "#A89880", marginTop: 2 }}>
+                      {l.date}・{l.type === "like" ? "好き" : "苦手"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {tab === "habits" && (
+          <>
+            <div style={{
+              background: "linear-gradient(135deg, #E6F2ED, #D4E8DC)",
+              borderRadius: 14, padding: "12px 14px", marginBottom: 12,
+              border: "1px solid #C5D9CA",
+            }}>
+              <p style={{ fontSize: 11, color: "#5A7A60", margin: 0, fontWeight: 700 }}>
+                🎯 200回で習慣になる
+              </p>
+              <p style={{ fontSize: 12, color: "#3D4F3A", margin: "4px 0 0", lineHeight: 1.6 }}>
+                できた瞬間（60秒以内）にほめると定着しやすいです
+              </p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {HABITS.map((h, i) => {
+                const pct = Math.min(100, Math.round(h.count / h.goal * 100));
+                return (
+                  <div key={i} style={{
+                    background: "white", borderRadius: 14, padding: "12px 14px",
+                    border: "1px solid #E8DDD0",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <span style={{ fontSize: 22 }}>{h.emoji}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, color: "#3D3425", fontWeight: 700 }}>{h.label}</div>
+                        <div style={{ fontSize: 10, color: "#A89880" }}>
+                          {h.count} / {h.goal} 回
+                        </div>
+                      </div>
+                      <button style={{
+                        padding: "6px 12px", borderRadius: 10, border: "none",
+                        background: "#E8A87C", color: "white", fontSize: 12, fontWeight: 700,
+                      }}>+1</button>
+                    </div>
+                    <div style={{
+                      height: 6, borderRadius: 3, background: "#F0E8DC", overflow: "hidden",
+                    }}>
+                      <div style={{
+                        width: `${pct}%`, height: "100%",
+                        background: "linear-gradient(90deg, #E8A87C, #D4845A)",
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
+
+              <button style={{
+                padding: "12px", borderRadius: 12, marginTop: 4,
+                border: "2px dashed #E8A87C", background: "white",
+                fontSize: 13, fontWeight: 700, color: "#D4845A",
+              }}>+ 習慣を追加する</button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <BottomNav active={SCREENS.LOG} onChange={onNav} />
+    </div>
+  );
+};
+
+// 特性プロフィール画面（チェックリストの結果を表示・編集）
+const ProfileScreen = ({ onNav }) => (
+  <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <StatusBar />
+    <div style={{ padding: "14px 20px 8px" }}>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: "#3D3425", margin: 0 }}>ゆうくんの特性</h2>
+      <p style={{ fontSize: 11, color: "#8B7D6B", margin: "2px 0 0" }}>
+        登録した傾向（いつでも編集可）
+      </p>
+    </div>
+
+    <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      <div style={{
+        background: "#FFF3E6", borderRadius: 14, padding: "12px 14px",
+        marginBottom: 12, border: "1px solid #F0DCC8",
+      }}>
+        <p style={{ fontSize: 11, color: "#8B7D6B", margin: 0 }}>
+          ℹ️ ここで登録した情報は、声かけ提案の精度を高めるために使われます。診断には使いません。
+        </p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {TRAIT_CHECKLIST.slice(0, 4).map(item => (
+          <div key={item.label} style={{
+            padding: "12px 14px", borderRadius: 12,
+            border: "2px solid #E8A87C", background: "#FFF3E6",
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <span style={{ fontSize: 22 }}>{item.emoji}</span>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#3D3425" }}>{item.label}</div>
+            <span style={{ color: "#E8A87C", fontWeight: 800 }}>✓</span>
+          </div>
+        ))}
+      </div>
+
+      <button style={{
+        marginTop: 16, width: "100%", padding: "12px", borderRadius: 12,
+        border: "2px solid #E8DDD0", background: "white",
+        fontSize: 13, fontWeight: 700, color: "#6B5E4F",
+      }}>＋ 傾向を追加・編集する</button>
+    </div>
+
+    <BottomNav active={SCREENS.PROFILE} onChange={onNav} />
+  </div>
+);
 
 const ResultScreen = ({ data, onBack }) => (
   <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -329,9 +635,9 @@ const ResultScreen = ({ data, onBack }) => (
 
     <div style={{
       flex: 1, overflowY: "auto", padding: "16px",
-      display: "flex", flexDirection: "column", gap: 16,
+      display: "flex", flexDirection: "column", gap: 14,
     }}>
-      <div style={{ background: "#F5EFEA", borderRadius: 16, padding: "16px" }}>
+      <div style={{ background: "#F5EFEA", borderRadius: 16, padding: "14px" }}>
         <p style={{ fontSize: 11, color: "#8B7D6B", margin: "0 0 6px", fontWeight: 600 }}>
           😤 こう言いたくなる気持ち
         </p>
@@ -344,9 +650,21 @@ const ResultScreen = ({ data, onBack }) => (
       </div>
 
       <div>
-        <p style={{ fontSize: 11, color: "#8B7D6B", margin: "0 0 10px 4px", fontWeight: 600 }}>
-          🌱 {data.childName}への声掛けアイデア
-        </p>
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          margin: "0 4px 10px",
+        }}>
+          <p style={{ fontSize: 11, color: "#8B7D6B", margin: 0, fontWeight: 600 }}>
+            🌱 {data.childName}への声掛けアイデア
+          </p>
+          {data.basis && (
+            <span style={{
+              fontSize: 9, color: "#5A7A60", background: "#E6F2ED",
+              padding: "2px 8px", borderRadius: 8, fontWeight: 700,
+              border: "1px solid #C5D9CA",
+            }}>参考: {data.basis}</span>
+          )}
+        </div>
         {data.reframes.map((r, i) => (
           <div key={i} style={{
             background: "white", borderRadius: 16, padding: "16px",
@@ -356,17 +674,22 @@ const ResultScreen = ({ data, onBack }) => (
               position: "absolute", top: 12, right: 12,
               background: "#FFF3E6", borderRadius: 8, padding: "2px 8px",
               fontSize: 10, color: "#D4845A", fontWeight: 700,
-            }}>案{i + 1}</div>
+            }}>{i === 0 ? "A案" : "B案"}</div>
             <p style={{ fontSize: 14, color: "#3D3425", margin: 0, lineHeight: 1.8, paddingRight: 40 }}>
               {r}
             </p>
           </div>
         ))}
+        <button style={{
+          width: "100%", padding: "10px", borderRadius: 10,
+          border: "1px dashed #D4C4B0", background: "transparent",
+          fontSize: 12, color: "#8B7D6B", fontWeight: 600, marginTop: 4,
+        }}>🔄 別の案を生成</button>
       </div>
 
       <div style={{
         background: "linear-gradient(135deg, #E6F2ED, #D4E8DC)",
-        borderRadius: 16, padding: "20px", border: "1px solid #C5D9CA",
+        borderRadius: 16, padding: "18px", border: "1px solid #C5D9CA",
       }}>
         <p style={{ fontSize: 11, color: "#5A7A60", margin: "0 0 8px", fontWeight: 700 }}>
           🤲 あなたへ
@@ -381,14 +704,12 @@ const ResultScreen = ({ data, onBack }) => (
           flex: 1, padding: "14px", borderRadius: 12,
           border: "2px solid #E8DDD0", background: "white",
           fontSize: 13, color: "#6B5E4F", fontWeight: 600,
-          fontFamily: "'Noto Sans JP', sans-serif",
         }}>😊 効果あり</button>
         <button style={{
           flex: 1, padding: "14px", borderRadius: 12,
           border: "2px solid #E8DDD0", background: "white",
           fontSize: 13, color: "#6B5E4F", fontWeight: 600,
-          fontFamily: "'Noto Sans JP', sans-serif",
-        }}>🔄 別の案</button>
+        }}>😕 効かなかった</button>
       </div>
     </div>
   </div>
@@ -415,9 +736,9 @@ function App() {
         <h1 style={{
           color: "white", fontSize: 16, fontWeight: 600,
           margin: "0 0 4px", opacity: 0.6, letterSpacing: 2,
-        }}>wakuLog MVP Mockup</h1>
+        }}>wakuLog MVP Mockup v2</h1>
         <p style={{ color: "white", fontSize: 12, opacity: 0.3, margin: 0 }}>
-          タップして操作できます
+          04/14 議事録反映版
         </p>
       </div>
 
@@ -426,34 +747,43 @@ function App() {
           <OnboardingScreen1 onNext={() => setScreen(SCREENS.ONBOARDING_2)} />
         )}
         {screen === SCREENS.ONBOARDING_2 && (
-          <OnboardingChat step={SCREENS.ONBOARDING_2} onNext={() => setScreen(SCREENS.ONBOARDING_3)} />
+          <OnboardingNickname onNext={() => setScreen(SCREENS.ONBOARDING_3)} />
         )}
         {screen === SCREENS.ONBOARDING_3 && (
-          <OnboardingChat step={SCREENS.ONBOARDING_3} onFinish={() => setScreen(SCREENS.HOME)} />
+          <OnboardingChecklist onFinish={() => setScreen(SCREENS.HOME)} />
         )}
         {screen === SCREENS.HOME && (
-          <HomeScreen onSelect={handleSelect} onKeywordSubmit={handleSelect} />
+          <HomeScreen
+            onSelect={handleSelect}
+            onKeywordSubmit={handleSelect}
+            onNav={setScreen}
+          />
         )}
+        {screen === SCREENS.LOG && <LogScreen onNav={setScreen} />}
+        {screen === SCREENS.PROFILE && <ProfileScreen onNav={setScreen} />}
         {screen === SCREENS.RESULT && (
           <ResultScreen data={resultData} onBack={() => setScreen(SCREENS.HOME)} />
         )}
       </Phone>
 
-      <div style={{ marginTop: 20, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+      <div style={{ marginTop: 20, display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", maxWidth: 560 }}>
         {[
-          { label: "オンボーディング", s: SCREENS.ONBOARDING_1 },
+          { label: "①起動", s: SCREENS.ONBOARDING_1 },
+          { label: "②ニックネーム", s: SCREENS.ONBOARDING_2 },
+          { label: "③特性チェック", s: SCREENS.ONBOARDING_3 },
           { label: "ホーム", s: SCREENS.HOME },
+          { label: "ログ", s: SCREENS.LOG },
+          { label: "特性", s: SCREENS.PROFILE },
           { label: "変換結果", s: SCREENS.RESULT },
         ].map(b => (
           <button key={b.label} onClick={() => {
             if (b.s === SCREENS.RESULT) setResultData(REFRAME_DATA["片付け　拒否"]);
             setScreen(b.s);
           }} style={{
-            padding: "8px 16px", borderRadius: 8,
+            padding: "8px 14px", borderRadius: 8,
             border: "1px solid rgba(255,255,255,0.15)",
             background: screen === b.s ? "rgba(232,168,124,0.3)" : "rgba(255,255,255,0.05)",
             color: "white", fontSize: 12,
-            fontFamily: "'Noto Sans JP', sans-serif",
           }}>{b.label}</button>
         ))}
       </div>
