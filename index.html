@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wakuLog MVP Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(160deg, #2D2A3E 0%, #1a1a2e 100%); min-height: 100vh; }
+button { cursor: pointer; transition: transform 0.1s, opacity 0.15s; }
+button:active { transform: scale(0.97); opacity: 0.85; }
+input:focus { border-color: #E8A87C !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const SCREENS = {
+  ONBOARDING_1: "onboarding_1",
+  ONBOARDING_2: "onboarding_2",
+  ONBOARDING_3: "onboarding_3",
+  HOME: "home",
+  RESULT: "result",
+};
+
+const QUICK_SCENES = [
+  { icon: "🧹", label: "片付けしない", keywords: "片付け　拒否" },
+  { icon: "🍚", label: "ご飯を食べない", keywords: "食事　拒否" },
+  { icon: "👕", label: "着替え嫌がる", keywords: "着替え　拒否" },
+  { icon: "😭", label: "癇癪・パニック", keywords: "癇癪　パニック" },
+  { icon: "🚪", label: "外出を嫌がる", keywords: "外出　拒否" },
+  { icon: "😤", label: "順番が待てない", keywords: "順番　待てない" },
+];
+
+const REFRAME_DATA = {
+  "片付け　拒否": {
+    original: "片付けなさい！何回言ったらわかるの！",
+    reframes: [
+      "「どっちから片付ける？おもちゃ？本？」って選ばせてみて。自分で決めると動きやすくなります。",
+      "「箱に何個入れられるか数えてみよう！」って遊びに変換するのもアリです。",
+    ],
+    care: "何度言っても動かない時間、本当に消耗しますよね。あなたが「片付けてほしい」と思うのは、お子さんの生活を整えたいという愛情そのものです。",
+    childName: "ゆうくん",
+  },
+  "食事　拒否": {
+    original: "ちゃんと食べなさい！",
+    reframes: [
+      "「このブロッコリー、木みたいだね。恐竜が食べてたかも？」って想像力を刺激してみて。",
+      "「3口だけチャレンジしてみよう！」って小さなゴールを作るのも効果的です。",
+    ],
+    care: "せっかく作ったご飯を食べてもらえないのは、心が折れますよね。あなたの努力はちゃんとお子さんに届いています。",
+    childName: "ゆうくん",
+  },
+  "着替え　拒否": {
+    original: "早く着替えなさい！遅刻するよ！",
+    reframes: [
+      "「今日はどっちのTシャツにする？恐竜？車？」って2択で選ばせてみて。自分で選ぶと着替えへの抵抗が減ります。",
+      "「よーいどん！ママと着替え競争しよう！」って遊びにすると、楽しんで動いてくれることも。",
+    ],
+    care: "朝の忙しい時間に着替えで止まると焦りますよね。毎朝お子さんを送り出そうと頑張っているあなたは、すごいです。",
+    childName: "ゆうくん",
+  },
+  "癇癪　パニック": {
+    original: "いい加減にして！泣いても変わらないよ！",
+    reframes: [
+      "まず安全を確保して、少し離れて見守って大丈夫です。嵐が過ぎたら「大変だったね」と声をかけてあげて。",
+      "「怒ってるんだね、悲しいんだね」って気持ちに名前をつけてあげると、少しずつ落ち着ける子もいます。",
+    ],
+    care: "癇癪の最中は、何をしても正解がないように感じますよね。あなたがそばにいること自体が、お子さんの安心の土台になっています。",
+    childName: "ゆうくん",
+  },
+  "外出　拒否": {
+    original: "行かなきゃダメでしょ！わがまま言わないで！",
+    reframes: [
+      "「お外に〇〇があるかもしれないよ？探しに行ってみよう！」って好奇心をくすぐってみて。",
+      "「靴を履くところまでやってみよう。そこで嫌だったら教えてね」ってスモールステップで。",
+    ],
+    care: "出かけなきゃいけないのに動いてくれないのは、本当にもどかしいですよね。あなたの粘り強さ、お子さんはちゃんと感じていますよ。",
+    childName: "ゆうくん",
+  },
+  "順番　待てない": {
+    original: "ちゃんと待ちなさい！恥ずかしいでしょ！",
+    reframes: [
+      "「あと何人かな？一緒に数えてみよう」って見通しを持たせてあげると、待てる子もいます。",
+      "「待ってる間、しりとりしよう！」って待ち時間を別の体験に変えてみて。",
+    ],
+    care: "周りの目が気になる中での対応、本当に大変ですよね。外でも一生懸命お子さんに向き合っているあなたは、立派です。",
+    childName: "ゆうくん",
+  },
+};
+
+const Phone = ({ children }) => (
+  <div style={{
+    width: 375, height: 740, borderRadius: 40,
+    background: "#1a1a2e",
+    boxShadow: "0 25px 80px rgba(0,0,0,0.4), 0 0 0 2px rgba(255,255,255,0.08)",
+    padding: "12px 12px", position: "relative", overflow: "hidden",
+  }}>
+    <div style={{
+      width: "100%", height: "100%", borderRadius: 30,
+      overflow: "hidden", position: "relative", background: "#FFFBF5",
+    }}>
+      {children}
+    </div>
+  </div>
+);
+
+const StatusBar = () => (
+  <div style={{
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    padding: "8px 20px 4px", fontSize: 12, fontWeight: 600, color: "#6B5E4F",
+  }}>
+    <span>9:41</span>
+    <div style={{ width: 80, height: 24, background: "#1a1a2e", borderRadius: 12 }} />
+    <span>📶 🔋</span>
+  </div>
+);
+
+const OnboardingScreen1 = ({ onNext }) => (
+  <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <StatusBar />
+    <div style={{
+      flex: 1, display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", padding: "0 30px", gap: 20,
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 8 }}>🌱</div>
+      <h1 style={{ fontSize: 28, fontWeight: 800, color: "#3D3425", margin: 0, letterSpacing: -1 }}>
+        wakuLog
+      </h1>
+      <p style={{ fontSize: 14, color: "#8B7D6B", textAlign: "center", lineHeight: 1.8, margin: 0 }}>
+        衝突の瞬間を、成長の種に変える。<br />親子で前向きになれるAIパートナー。
+      </p>
+      <button onClick={onNext} style={{
+        marginTop: 20, width: "100%", padding: "16px", borderRadius: 16,
+        border: "none", background: "linear-gradient(135deg, #E8A87C, #D4845A)",
+        color: "white", fontSize: 16, fontWeight: 700,
+        boxShadow: "0 4px 20px rgba(232,168,124,0.4)",
+      }}>
+        はじめる
+      </button>
+    </div>
+  </div>
+);
+
+const OnboardingChat = ({ step, onNext, onFinish }) => {
+  const [nickname, setNickname] = useState("");
+  const [worry, setWorry] = useState("");
+  const isStep2 = step === SCREENS.ONBOARDING_2;
+
+  const messages = isStep2
+    ? [{ from: "ai", text: "はじめまして！wakuLogです 🌱\nまずはお子さんのニックネームを教えてください。" }]
+    : [{ from: "ai", text: "ゆうくん、すてきなお名前ですね！\n今いちばん困っていること、ひとつだけ教えてもらえますか？" }];
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <StatusBar />
+      <div style={{
+        padding: "12px 20px", borderBottom: "1px solid #F0E8DC",
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <span style={{ fontSize: 20 }}>🌱</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#3D3425" }}>はじめの対話</span>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", gap: 4 }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{
+              width: 8, height: 8, borderRadius: 4,
+              background: i <= (isStep2 ? 1 : 2) ? "#E8A87C" : "#E8DDD0",
+            }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ flex: 1, padding: "20px 16px", overflowY: "auto" }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "flex-start", marginBottom: 12 }}>
+            <div style={{
+              background: "#FFF3E6", color: "#3D3425",
+              padding: "12px 16px", borderRadius: 18, borderTopLeftRadius: 4,
+              maxWidth: "80%", fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-line",
+            }}>
+              {m.text}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: "12px 16px 24px", borderTop: "1px solid #F0E8DC" }}>
+        {isStep2 ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <input value={nickname} onChange={e => setNickname(e.target.value)}
+              placeholder="ニックネーム（例：ゆうくん）"
+              style={{
+                flex: 1, padding: "12px 16px", borderRadius: 24,
+                border: "2px solid #E8DDD0", fontSize: 14, outline: "none", background: "white",
+                fontFamily: "'Noto Sans JP', sans-serif",
+              }}
+            />
+            <button onClick={onNext} style={{
+              width: 44, height: 44, borderRadius: 22,
+              border: "none", background: "#E8A87C", color: "white", fontSize: 18,
+            }}>→</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {["片付けをしない", "食事の偏りがひどい", "癇癪がひどい", "こだわりが強い"].map(w => (
+              <button key={w} onClick={onFinish} onMouseEnter={() => setWorry(w)}
+                style={{
+                  padding: "12px 16px", borderRadius: 12,
+                  border: "2px solid #E8DDD0", background: worry === w ? "#FFF3E6" : "white",
+                  fontSize: 14, textAlign: "left", color: "#3D3425",
+                  fontFamily: "'Noto Sans JP', sans-serif",
+                }}>
+                {w}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const HomeScreen = ({ onSelect, onKeywordSubmit }) => {
+  const [keyword, setKeyword] = useState("");
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <StatusBar />
+      <div style={{ padding: "16px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <span style={{ fontSize: 12, color: "#8B7D6B" }}>おかえりなさい</span>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#3D3425", margin: "2px 0 0" }}>ゆうくんのママ</h2>
+        </div>
+        <div style={{
+          width: 40, height: 40, borderRadius: 20,
+          background: "linear-gradient(135deg, #E8A87C, #D4845A)",
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+        }}>🌱</div>
+      </div>
+
+      <div style={{ padding: "8px 16px" }}>
+        <div style={{
+          display: "flex", gap: 8, background: "white", borderRadius: 16,
+          padding: "4px", border: "2px solid #E8DDD0",
+        }}>
+          <input value={keyword} onChange={e => setKeyword(e.target.value)}
+            placeholder="キーワードで相談（例：片付け　拒否）"
+            style={{
+              flex: 1, padding: "12px", border: "none", fontSize: 14,
+              outline: "none", background: "transparent",
+              fontFamily: "'Noto Sans JP', sans-serif",
+            }}
+          />
+          <button onClick={() => onKeywordSubmit("片付け　拒否")} style={{
+            padding: "10px 16px", borderRadius: 12, border: "none",
+            background: "#E8A87C", color: "white", fontSize: 13, fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}>変換</button>
+        </div>
+      </div>
+
+      <div style={{ padding: "16px 16px 8px" }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: "#8B7D6B", margin: "0 0 12px 4px", letterSpacing: 1 }}>
+          ⚡ よくあるシーン
+        </h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          {QUICK_SCENES.map(s => (
+            <button key={s.label} onClick={() => onSelect(s.keywords)} style={{
+              padding: "16px 8px", borderRadius: 16, border: "2px solid #F0E8DC",
+              background: "white", display: "flex", flexDirection: "column",
+              alignItems: "center", gap: 6,
+            }}>
+              <span style={{ fontSize: 28 }}>{s.icon}</span>
+              <span style={{ fontSize: 11, color: "#3D3425", fontWeight: 600, lineHeight: 1.3 }}>{s.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      <div style={{
+        padding: "12px 20px", margin: "0 16px 16px", borderRadius: 16,
+        background: "linear-gradient(135deg, #FFF3E6, #FFEBD4)", border: "1px solid #F0DCC8",
+      }}>
+        <p style={{ fontSize: 13, color: "#6B5540", margin: 0, lineHeight: 1.7 }}>
+          💡 前回「片付け」で<strong>選択肢を与える</strong>声掛けが効果ありでした
+        </p>
+      </div>
+
+      <div style={{
+        display: "flex", justifyContent: "space-around", padding: "8px 0 16px",
+        borderTop: "1px solid #F0E8DC",
+      }}>
+        {[
+          { icon: "🏠", label: "ホーム", active: true },
+          { icon: "📊", label: "ログ", active: false },
+          { icon: "👤", label: "特性", active: false },
+        ].map(t => (
+          <div key={t.label} style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            gap: 2, opacity: t.active ? 1 : 0.4,
+          }}>
+            <span style={{ fontSize: 20 }}>{t.icon}</span>
+            <span style={{ fontSize: 10, color: "#3D3425", fontWeight: t.active ? 700 : 400 }}>{t.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ResultScreen = ({ data, onBack }) => (
+  <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <StatusBar />
+    <div style={{
+      padding: "12px 16px", display: "flex", alignItems: "center",
+      gap: 8, borderBottom: "1px solid #F0E8DC",
+    }}>
+      <button onClick={onBack} style={{
+        background: "none", border: "none", fontSize: 20, padding: "4px 8px", color: "#6B5E4F",
+      }}>←</button>
+      <span style={{ fontSize: 15, fontWeight: 700, color: "#3D3425" }}>リフレーミング結果</span>
+    </div>
+
+    <div style={{
+      flex: 1, overflowY: "auto", padding: "16px",
+      display: "flex", flexDirection: "column", gap: 16,
+    }}>
+      <div style={{ background: "#F5EFEA", borderRadius: 16, padding: "16px" }}>
+        <p style={{ fontSize: 11, color: "#8B7D6B", margin: "0 0 6px", fontWeight: 600 }}>
+          😤 こう言いたくなる気持ち
+        </p>
+        <p style={{
+          fontSize: 14, color: "#6B5E4F", margin: 0, lineHeight: 1.6,
+          textDecoration: "line-through", opacity: 0.7,
+        }}>
+          {data.original}
+        </p>
+      </div>
+
+      <div>
+        <p style={{ fontSize: 11, color: "#8B7D6B", margin: "0 0 10px 4px", fontWeight: 600 }}>
+          🌱 {data.childName}への声掛けアイデア
+        </p>
+        {data.reframes.map((r, i) => (
+          <div key={i} style={{
+            background: "white", borderRadius: 16, padding: "16px",
+            marginBottom: 10, border: "2px solid #E8DDD0", position: "relative",
+          }}>
+            <div style={{
+              position: "absolute", top: 12, right: 12,
+              background: "#FFF3E6", borderRadius: 8, padding: "2px 8px",
+              fontSize: 10, color: "#D4845A", fontWeight: 700,
+            }}>案{i + 1}</div>
+            <p style={{ fontSize: 14, color: "#3D3425", margin: 0, lineHeight: 1.8, paddingRight: 40 }}>
+              {r}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div style={{
+        background: "linear-gradient(135deg, #E6F2ED, #D4E8DC)",
+        borderRadius: 16, padding: "20px", border: "1px solid #C5D9CA",
+      }}>
+        <p style={{ fontSize: 11, color: "#5A7A60", margin: "0 0 8px", fontWeight: 700 }}>
+          🤲 あなたへ
+        </p>
+        <p style={{ fontSize: 14, color: "#3D4F3A", margin: 0, lineHeight: 1.9 }}>
+          {data.care}
+        </p>
+      </div>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button style={{
+          flex: 1, padding: "14px", borderRadius: 12,
+          border: "2px solid #E8DDD0", background: "white",
+          fontSize: 13, color: "#6B5E4F", fontWeight: 600,
+          fontFamily: "'Noto Sans JP', sans-serif",
+        }}>😊 効果あり</button>
+        <button style={{
+          flex: 1, padding: "14px", borderRadius: 12,
+          border: "2px solid #E8DDD0", background: "white",
+          fontSize: 13, color: "#6B5E4F", fontWeight: 600,
+          fontFamily: "'Noto Sans JP', sans-serif",
+        }}>🔄 別の案</button>
+      </div>
+    </div>
+  </div>
+);
+
+function App() {
+  const [screen, setScreen] = useState(SCREENS.ONBOARDING_1);
+  const [resultData, setResultData] = useState(null);
+
+  const handleSelect = (keywords) => {
+    const data = REFRAME_DATA[keywords] || REFRAME_DATA["片付け　拒否"];
+    setResultData(data);
+    setScreen(SCREENS.RESULT);
+  };
+
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      background: "linear-gradient(160deg, #2D2A3E 0%, #1a1a2e 100%)",
+      padding: "40px 20px",
+    }}>
+      <div style={{ marginBottom: 24, textAlign: "center" }}>
+        <h1 style={{
+          color: "white", fontSize: 16, fontWeight: 600,
+          margin: "0 0 4px", opacity: 0.6, letterSpacing: 2,
+        }}>wakuLog MVP Mockup</h1>
+        <p style={{ color: "white", fontSize: 12, opacity: 0.3, margin: 0 }}>
+          タップして操作できます
+        </p>
+      </div>
+
+      <Phone>
+        {screen === SCREENS.ONBOARDING_1 && (
+          <OnboardingScreen1 onNext={() => setScreen(SCREENS.ONBOARDING_2)} />
+        )}
+        {screen === SCREENS.ONBOARDING_2 && (
+          <OnboardingChat step={SCREENS.ONBOARDING_2} onNext={() => setScreen(SCREENS.ONBOARDING_3)} />
+        )}
+        {screen === SCREENS.ONBOARDING_3 && (
+          <OnboardingChat step={SCREENS.ONBOARDING_3} onFinish={() => setScreen(SCREENS.HOME)} />
+        )}
+        {screen === SCREENS.HOME && (
+          <HomeScreen onSelect={handleSelect} onKeywordSubmit={handleSelect} />
+        )}
+        {screen === SCREENS.RESULT && (
+          <ResultScreen data={resultData} onBack={() => setScreen(SCREENS.HOME)} />
+        )}
+      </Phone>
+
+      <div style={{ marginTop: 20, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        {[
+          { label: "オンボーディング", s: SCREENS.ONBOARDING_1 },
+          { label: "ホーム", s: SCREENS.HOME },
+          { label: "変換結果", s: SCREENS.RESULT },
+        ].map(b => (
+          <button key={b.label} onClick={() => {
+            if (b.s === SCREENS.RESULT) setResultData(REFRAME_DATA["片付け　拒否"]);
+            setScreen(b.s);
+          }} style={{
+            padding: "8px 16px", borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.15)",
+            background: screen === b.s ? "rgba(232,168,124,0.3)" : "rgba(255,255,255,0.05)",
+            color: "white", fontSize: 12,
+            fontFamily: "'Noto Sans JP', sans-serif",
+          }}>{b.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
